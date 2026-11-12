@@ -269,16 +269,16 @@ PC → Arduino:  BUZZER_ON / BUZZER_OFF</div>
 <main>
   <section class="card ancho">
     <h2>Lista de materiales y costos</h2>
-    <table>
+    <table id="tablaMat">
       <tr><th>Componente</th><th>Función</th><th>Cant.</th><th>Precio unit.</th><th>Subtotal</th></tr>
-      <tr><td>Sensor higrómetro de humedad de suelo</td><td>Mide la humedad</td><td>2</td><td>$ 4.100</td><td>$ 8.200</td></tr>
-      <tr><td>Módulo semáforo LED (rojo, amarillo, verde)</td><td>Indicador de estado</td><td>1</td><td>$ 3.700</td><td>$ 3.700</td></tr>
-      <tr><td>Módulo buzzer activo KY-012</td><td>Alarma sonora</td><td>1</td><td>$ 3.100</td><td>$ 3.100</td></tr>
-      <tr><td contenteditable="true">Arduino Nano</td><td contenteditable="true">Controla la MEF</td><td contenteditable="true">1</td><td contenteditable="true">$ 16.110</td><td contenteditable="true">$ 16.110</td></tr>
-      <tr><td contenteditable="true">Cables jumper y protoboard</td><td contenteditable="true">Conexiones</td><td contenteditable="true">1</td><td contenteditable="true">$ 8.990</td><td contenteditable="true">$ 8.990</td></tr>
-      <tr><td contenteditable="true">Maceta</td><td contenteditable="true">Estructura</td><td contenteditable="true">2</td><td contenteditable="true">$ 384</td><td contenteditable="true">$ 768</td></tr>
-      <tr><td contenteditable="true">Tierra</td><td contenteditable="true">Sustrato para la planta</td><td contenteditable="true">1</td><td contenteditable="true">$ 1.899</td><td contenteditable="true">$ 1.899</td></tr>
-      <tr><td><b>Total</b></td><td></td><td></td><td></td><td><b>$ 42.767</b></td></tr>
+      <tr><td contenteditable="true">Sensor higrómetro de humedad de suelo</td><td contenteditable="true">Mide la humedad</td><td class="cant" contenteditable="true">2</td><td class="unit" contenteditable="true">$ 4.100</td><td class="sub"></td></tr>
+      <tr><td contenteditable="true">Módulo semáforo LED (rojo, amarillo, verde)</td><td contenteditable="true">Indicador de estado</td><td class="cant" contenteditable="true">1</td><td class="unit" contenteditable="true">$ 3.700</td><td class="sub"></td></tr>
+      <tr><td contenteditable="true">Módulo buzzer activo KY-012</td><td contenteditable="true">Alarma sonora</td><td class="cant" contenteditable="true">1</td><td class="unit" contenteditable="true">$ 3.100</td><td class="sub"></td></tr>
+      <tr><td contenteditable="true">Arduino Nano</td><td contenteditable="true">Controla la MEF</td><td class="cant" contenteditable="true">1</td><td class="unit" contenteditable="true">$ 16.110</td><td class="sub"></td></tr>
+      <tr><td contenteditable="true">Cables jumper y protoboard</td><td contenteditable="true">Conexiones</td><td class="cant" contenteditable="true">1</td><td class="unit" contenteditable="true">$ 8.990</td><td class="sub"></td></tr>
+      <tr><td contenteditable="true">Maceta</td><td contenteditable="true">Estructura</td><td class="cant" contenteditable="true">2</td><td class="unit" contenteditable="true">$ 384</td><td class="sub"></td></tr>
+      <tr><td contenteditable="true">Tierra</td><td contenteditable="true">Sustrato para la planta</td><td class="cant" contenteditable="true">1</td><td class="unit" contenteditable="true">$ 1.899</td><td class="sub"></td></tr>
+      <tr><td><b>Total</b></td><td></td><td></td><td></td><td><b id="totalMat"></b></td></tr>
     </table>
     <p class="etiqueta" style="margin-top:10px">Precios del carrito de SYSPORT, con envío gratis.</p>
   </section>
@@ -542,6 +542,30 @@ PC → Arduino:  BUZZER_ON / BUZZER_OFF</div>
     }
     requestAnimationFrame(animar);
   }
+
+  // ---------- Materiales: subtotales y total se recalculan al editar ----------
+  function aNumero(txt){ return Number(String(txt).replace(/[^0-9]/g, "")) || 0; }
+  function aPesos(n){ return "$ " + n.toLocaleString("es-AR"); }
+  function recalcularMateriales(){
+    let total = 0;
+    document.querySelectorAll("#tablaMat tr").forEach(function(tr){
+      const sub = tr.querySelector(".sub");
+      if(!sub) return;
+      const v = aNumero(tr.querySelector(".cant").textContent) * aNumero(tr.querySelector(".unit").textContent);
+      sub.textContent = aPesos(v);
+      total += v;
+    });
+    $("totalMat").textContent = aPesos(total);
+  }
+  $("tablaMat").addEventListener("input", recalcularMateriales);
+  // al salir de una celda de precio se le da formato ($ 1.234)
+  $("tablaMat").addEventListener("focusout", function(e){
+    if(e.target.classList && e.target.classList.contains("unit")){
+      e.target.textContent = aPesos(aNumero(e.target.textContent));
+      recalcularMateriales();
+    }
+  });
+  recalcularMateriales();
 
   // ---------- Guardar el HTML editado: se sube directo al repo de GitHub ----------
   // Se necesita un token de GitHub (fine-grained, solo este repo, permiso "Contents: Read and write").
