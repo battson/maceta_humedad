@@ -215,7 +215,7 @@
     <div class="etiqueta">Lectura del sensor</div>
     <div id="valorHum" class="valor">-- / 1023</div>
     <div class="barra"><div id="barraHum"></div></div>
-    <p class="texto-chico" style="margin-top:10px">Tierra: <b id="textoHum">--</b> · umbral seco = 600</p>
+    <p class="texto-chico" style="margin-top:10px">Tierra: <b id="textoHum">--</b> · seca por debajo de 423</p>
   </section>
 
   <!-- MEF -->
@@ -228,7 +228,7 @@
       <div class="flecha">buzzer on ↓<br>húmeda ↑</div>
       <div id="nodoALARMA" class="nodo">ALARMA<br><small>suena el buzzer</small></div>
     </div>
-    <p class="leyenda">Cambia a SECA cuando la tierra supera el umbral. Pasa a ALARMA si el buzzer está activado. Vuelve a OK cuando la tierra se humedece.</p>
+    <p class="leyenda">Cambia a SECA cuando la humedad baja del umbral. Pasa a ALARMA si el buzzer está activado. Vuelve a OK cuando la tierra se humedece.</p>
   </section>
 
   <!-- Buzzer desde el celular -->
@@ -271,9 +271,9 @@
     <p class="etiqueta">3. Máquina de estados</p>
     <table>
       <tr><th>Estado</th><th>Condición</th><th>Salida</th></tr>
-      <tr><td contenteditable="true">OK</td><td contenteditable="true">Humedad ≤ 600</td><td contenteditable="true">LED verde</td></tr>
-      <tr><td contenteditable="true">SECA</td><td contenteditable="true">Humedad &gt; 600 y buzzer apagado</td><td contenteditable="true">LED amarillo y aviso</td></tr>
-      <tr><td contenteditable="true">ALARMA</td><td contenteditable="true">Humedad &gt; 600 y buzzer activado</td><td contenteditable="true">LED rojo, buzzer y aviso</td></tr>
+      <tr><td contenteditable="true">OK</td><td contenteditable="true">Humedad ≥ 423</td><td contenteditable="true">LED verde</td></tr>
+      <tr><td contenteditable="true">SECA</td><td contenteditable="true">Humedad &lt; 423 y buzzer apagado</td><td contenteditable="true">LED amarillo y aviso</td></tr>
+      <tr><td contenteditable="true">ALARMA</td><td contenteditable="true">Humedad &lt; 423 y buzzer activado</td><td contenteditable="true">LED rojo, buzzer y aviso</td></tr>
     </table>
     <figure class="mefFig">
       <svg class="mefsvg" viewBox="0 0 700 290" role="img" aria-label="Diagrama de la máquina de estados: OK, SECA y ALARMA">
@@ -294,23 +294,23 @@
           <text x="595" y="140" class="t1">ALARMA</text><text x="595" y="158" class="t2">suena el buzzer</text><text x="595" y="174" class="t2">LED rojo</text></g>
 
         <path d="M175 105 L282 70" stroke="#f2a33a" stroke-width="2.5" fill="none" marker-end="url(#fa)"/>
-        <text x="150" y="78" class="lb">humedad &gt; 600</text><text x="150" y="91" class="lb">y buzzer OFF</text>
+        <text x="150" y="78" class="lb">humedad &lt; 423</text><text x="150" y="91" class="lb">y buzzer OFF</text>
 
         <path d="M105 193 Q105 262 350 262 Q595 262 595 193" stroke="#e0484f" stroke-width="2.5" fill="none" marker-end="url(#fr)"/>
-        <text x="350" y="254" class="lb">humedad &gt; 600 y buzzer ON</text>
+        <text x="350" y="254" class="lb">humedad &lt; 423 y buzzer ON</text>
 
         <path d="M425 90 L530 118" stroke="#2f6fde" stroke-width="2.5" fill="none" marker-end="url(#fb)" marker-start="url(#fb)"/>
         <text x="540" y="84" class="lb">BUZZER_ON  →</text><text x="540" y="97" class="lb">←  BUZZER_OFF</text>
 
         <path d="M268 100 Q235 150 192 150" stroke="#14b87a" stroke-width="2.5" fill="none" marker-end="url(#fg)"/>
         <path d="M512 165 Q350 195 192 172" stroke="#14b87a" stroke-width="2.5" fill="none" marker-end="url(#fg)"/>
-        <text x="350" y="193" class="lb lbg">humedad ≤ 600</text>
-        <text x="240" y="132" class="lb lbg">humedad ≤ 600</text>
+        <text x="350" y="193" class="lb lbg">humedad ≥ 423</text>
+        <text x="240" y="132" class="lb lbg">humedad ≥ 423</text>
       </svg>
       <figcaption>Diagrama de la MEF. El estado actual se ilumina en vivo con los datos que llegan (Arduino, MQTT o simulación).</figcaption>
     </figure>
     <p class="etiqueta" style="margin-top:14px">4. Protocolo Serial</p>
-    <div class="codigo">Arduino → PC:  ESTADO:SECA;HUM:720
+    <div class="codigo">Arduino → PC:  ESTADO:SECA;HUM:720   (lectura cruda: 1023 = seco; la página la muestra invertida: 0 = seco, 1023 = mojado)
 PC → Arduino:  BUZZER_ON / BUZZER_OFF</div>
     <p class="etiqueta" style="margin-top:14px">5. Conclusiones</p>
     <p contenteditable="true">Completar con lo que aprendimos y las limitaciones del prototipo.</p>
@@ -341,7 +341,9 @@ PC → Arduino:  BUZZER_ON / BUZZER_OFF</div>
 
 <script>
   // ---------- Constantes ----------
-  const UMBRAL = 600;                       // igual que umbralSeco en el Arduino
+  const UMBRAL = 600;                       // igual que umbralSeco en el Arduino (lectura cruda: más alto = más seco)
+  const MAXIMO = 1023;
+  const UMBRAL_HUM = MAXIMO - UMBRAL;       // 423: en la escala de la página, por debajo de esto la tierra está seca
   const TEXTOS = {
     OK: "OK · Tierra húmeda",
     SECA: "SECA · Hay que regar",
@@ -426,7 +428,7 @@ PC → Arduino:  BUZZER_ON / BUZZER_OFF</div>
     String(linea).trim().split(";").forEach(function(parte){
       const par = parte.split(":");
       if(par[0] === "ESTADO") estado = par[1];
-      if(par[0] === "HUM") hum = Number(par[1]);
+      if(par[0] === "HUM") hum = MAXIMO - Number(par[1]);   // el sensor manda más alto = más seco; la página muestra 0 = seco, 1023 = mojado
     });
     if(!TEXTOS[estado]) return;              // ignora líneas que no son del estado
     mostrarEstado(estado, hum);
@@ -447,7 +449,7 @@ PC → Arduino:  BUZZER_ON / BUZZER_OFF</div>
     const pct = Math.round(Math.min(Math.max(hum,0),1023) / 1023 * 100);
     $("barraHum").style.width = pct + "%";
     $("valorHum").textContent = hum + " / 1023";
-    $("textoHum").textContent = hum <= UMBRAL ? "húmeda" : "seca";
+    $("textoHum").textContent = hum >= UMBRAL_HUM ? "húmeda" : "seca";
 
     // MEF
     ["nodoOK","nodoSECA","nodoALARMA"].forEach(id => $(id).classList.remove("activo"));
@@ -580,7 +582,7 @@ PC → Arduino:  BUZZER_ON / BUZZER_OFF</div>
 
     actualizar3D = function(estado, hum){
       const k = Math.min(Math.max(hum, 0), 1023) / 1023;
-      matTierra.color.copy(new THREE.Color(0x2d1b0e).lerp(new THREE.Color(0x9a7650), k));
+      matTierra.color.copy(new THREE.Color(0x9a7650).lerp(new THREE.Color(0x2d1b0e), k));   // seca = clara, mojada = oscura
     };
 
     function animar(t){
