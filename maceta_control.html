@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Maceta inteligente · Control</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://gorosito.red/componentes"></script>
@@ -91,10 +91,64 @@
   .mefsvg .lb{font:11px "Courier New",monospace;text-anchor:middle;fill:var(--ink);paint-order:stroke;stroke:#fff;stroke-width:4px}
   .mefsvg .lbg{fill:#0b8a5c;font-weight:700}
   .mefFig figcaption{font-size:12px;color:var(--muted);margin-top:4px}
+  img,canvas{max-width:100%}
+  main>*{min-width:0}
   @media (max-width:760px){
-    main{grid-template-columns:1fr}
+    main{grid-template-columns:1fr;padding:12px;gap:12px}
+    .card{padding:14px}
+    .ancho{grid-column:auto}
+
+    /* encabezado: título arriba y botones en grilla de 2 columnas */
+    header{padding:12px;gap:8px}
+    header h1{font-size:17px}
+    .botones{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+    button{min-height:44px;padding:10px 8px}
+    .botones button:last-child{grid-column:1/-1}
+
+    /* pestañas: ocupan todo el ancho y se desplazan si no entran */
+    nav.tabs{padding:0 12px;margin-top:12px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+    nav.tabs button{flex:1 0 auto;white-space:nowrap}
+
+    /* semáforo y textos */
+    .semaforo{padding:10px 16px;gap:10px}
+    .luz{width:40px;height:40px}
+    .estado{font-size:17px}
+    .valor{font-size:30px}
+
+    /* MEF en vertical: las flechas pasan a ser filas de texto */
     .mef{grid-template-columns:1fr;gap:4px}
-    .flecha{transform:rotate(90deg)}
+    .flecha{transform:none;padding:2px 0}
+    .flecha br{display:none}
+
+    /* 3D y registro */
+    #pot3d{height:240px}
+    .registro{height:120px}
+
+    /* informe */
+    .codigo{overflow-x:auto;font-size:11px}
+    table{font-size:13px}
+    td,th{padding:7px 6px}
+    /* el diagrama conserva un tamaño legible y se desliza de costado */
+    .mefFig{overflow-x:auto;-webkit-overflow-scrolling:touch}
+    .mefsvg{min-width:600px;max-width:none}
+
+    /* materiales: cada fila es una tarjeta con etiquetas */
+    #tablaMat,#tablaMat tbody,#tablaMat tr,#tablaMat td{display:block;width:100%}
+    #tablaMat tr:first-child{display:none}
+    #tablaMat tr{border:1px solid var(--line);border-radius:10px;margin-bottom:10px;padding:6px 10px;background:#fff}
+    #tablaMat td{display:flex;justify-content:space-between;gap:12px;border:0;padding:6px 0;text-align:right}
+    #tablaMat td::before{content:attr(data-et);font:600 11px/1.9 "Courier New",monospace;text-transform:uppercase;color:var(--muted);text-align:left;flex:0 0 auto}
+    #tablaMat td:first-child{font-weight:600;text-align:left;border-bottom:1px solid var(--line);margin-bottom:4px}
+    #tablaMat td:first-child::before{content:none}
+    #tablaMat td[contenteditable]{min-height:32px}
+    #tablaMat tr:last-child td:empty{display:none}
+    #tablaMat tr:last-child td:first-child{display:none}
+    #tablaMat tr:last-child td:last-child::before{content:"Total"}
+    #tablaMat tr:last-child td:last-child{font-size:17px}
+  }
+  @media (max-width:380px){
+    .luz{width:34px;height:34px}
+    .semaforo{gap:8px}
   }
   @media print{
     header,nav.tabs,.botones{display:none!important}
@@ -271,14 +325,14 @@ PC → Arduino:  BUZZER_ON / BUZZER_OFF</div>
     <h2>Lista de materiales y costos</h2>
     <table id="tablaMat">
       <tr><th>Componente</th><th>Función</th><th>Cant.</th><th>Precio unit.</th><th>Subtotal</th></tr>
-      <tr><td contenteditable="true">Sensor higrómetro de humedad de suelo</td><td contenteditable="true">Mide la humedad</td><td class="cant" contenteditable="true">2</td><td class="unit" contenteditable="true">$ 4.100</td><td class="sub"></td></tr>
-      <tr><td contenteditable="true">Módulo semáforo LED (rojo, amarillo, verde)</td><td contenteditable="true">Indicador de estado</td><td class="cant" contenteditable="true">1</td><td class="unit" contenteditable="true">$ 3.700</td><td class="sub"></td></tr>
-      <tr><td contenteditable="true">Módulo buzzer activo KY-012</td><td contenteditable="true">Alarma sonora</td><td class="cant" contenteditable="true">1</td><td class="unit" contenteditable="true">$ 3.100</td><td class="sub"></td></tr>
-      <tr><td contenteditable="true">Arduino Nano</td><td contenteditable="true">Controla la MEF</td><td class="cant" contenteditable="true">1</td><td class="unit" contenteditable="true">$ 16.110</td><td class="sub"></td></tr>
-      <tr><td contenteditable="true">Cables jumper y protoboard</td><td contenteditable="true">Conexiones</td><td class="cant" contenteditable="true">1</td><td class="unit" contenteditable="true">$ 8.990</td><td class="sub"></td></tr>
-      <tr><td contenteditable="true">Maceta</td><td contenteditable="true">Estructura</td><td class="cant" contenteditable="true">2</td><td class="unit" contenteditable="true">$ 384</td><td class="sub"></td></tr>
-      <tr><td contenteditable="true">Tierra</td><td contenteditable="true">Sustrato para la planta</td><td class="cant" contenteditable="true">1</td><td class="unit" contenteditable="true">$ 1.899</td><td class="sub"></td></tr>
-      <tr><td><b>Total</b></td><td></td><td></td><td></td><td><b id="totalMat"></b></td></tr>
+      <tr><td contenteditable="true">Sensor higrómetro de humedad de suelo</td><td data-et="Función" contenteditable="true">Mide la humedad</td><td data-et="Cant." class="cant" contenteditable="true">2</td><td data-et="Precio unit." class="unit" contenteditable="true">$ 4.100</td><td data-et="Subtotal" class="sub"></td></tr>
+      <tr><td contenteditable="true">Módulo semáforo LED (rojo, amarillo, verde)</td><td data-et="Función" contenteditable="true">Indicador de estado</td><td data-et="Cant." class="cant" contenteditable="true">1</td><td data-et="Precio unit." class="unit" contenteditable="true">$ 3.700</td><td data-et="Subtotal" class="sub"></td></tr>
+      <tr><td contenteditable="true">Módulo buzzer activo KY-012</td><td data-et="Función" contenteditable="true">Alarma sonora</td><td data-et="Cant." class="cant" contenteditable="true">1</td><td data-et="Precio unit." class="unit" contenteditable="true">$ 3.100</td><td data-et="Subtotal" class="sub"></td></tr>
+      <tr><td contenteditable="true">Arduino Nano</td><td data-et="Función" contenteditable="true">Controla la MEF</td><td data-et="Cant." class="cant" contenteditable="true">1</td><td data-et="Precio unit." class="unit" contenteditable="true">$ 16.110</td><td data-et="Subtotal" class="sub"></td></tr>
+      <tr><td contenteditable="true">Cables jumper y protoboard</td><td data-et="Función" contenteditable="true">Conexiones</td><td data-et="Cant." class="cant" contenteditable="true">1</td><td data-et="Precio unit." class="unit" contenteditable="true">$ 8.990</td><td data-et="Subtotal" class="sub"></td></tr>
+      <tr><td contenteditable="true">Maceta</td><td data-et="Función" contenteditable="true">Estructura</td><td data-et="Cant." class="cant" contenteditable="true">2</td><td data-et="Precio unit." class="unit" contenteditable="true">$ 384</td><td data-et="Subtotal" class="sub"></td></tr>
+      <tr><td contenteditable="true">Tierra</td><td data-et="Función" contenteditable="true">Sustrato para la planta</td><td data-et="Cant." class="cant" contenteditable="true">1</td><td data-et="Precio unit." class="unit" contenteditable="true">$ 1.899</td><td data-et="Subtotal" class="sub"></td></tr>
+      <tr><td><b>Total</b></td><td data-et="Función"></td><td data-et="Cant."></td><td data-et="Precio unit."></td><td data-et="Subtotal"><b id="totalMat"></b></td></tr>
     </table>
     <p class="etiqueta" style="margin-top:10px">Precios del carrito de SYSPORT, con envío gratis.</p>
   </section>
