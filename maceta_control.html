@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, user-scalable=no">
+<title>Maceta inteligente · Control</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://gorosito.red/componentes"></script>
+<style>
+  :root{--ink:#0d2230;--muted:#5b6f7c;--line:#c9dbe4;--cyan:#00a8c6;--bg:#f4f9fb;
+        --verde:#14b87a;--amarillo:#f2a33a;--rojo:#e0484f}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.5 "Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+  header{background:#0d2230;color:#e6f6fa;padding:14px 18px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+  header h1{font-size:19px;margin:0}
+  header .sub{font:12px "Courier New",monospace;color:#7fe0f2;letter-spacing:.06em}
+  .botones{display:flex;flex-wrap:wrap;gap:8px}
+  button{font:600 13px/1 inherit;font-family:inherit;border:0;border-radius:8px;padding:10px 13px;cursor:pointer;background:#1e3a4a;color:#e6f6fa}
+  button.primario{background:var(--cyan);color:#022a35}
+  button:hover{filter:brightness(1.08)}
+  nav.tabs{display:flex;gap:6px;max-width:1000px;margin:14px auto 0;padding:0 16px}
+  nav.tabs button{background:#dfeef3;color:var(--ink)}
+  nav.tabs button.activa{background:var(--ink);color:#e6f6fa}
+  main{max-width:1000px;margin:0 auto;padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px}
+  .card h2{font-size:15px;margin:0 0 12px;color:var(--ink)}
+  .ancho{grid-column:1/-1}
+  .etiqueta{font:600 11px/1 "Courier New",monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+
+  /* semáforo */
+  .semaforo{display:flex;gap:14px;justify-content:center;background:#0d2230;border-radius:999px;padding:12px 22px;width:max-content;margin:0 auto}
+  .luz{width:46px;height:46px;border-radius:50%;background:#2a4352;border:3px solid #1b2f3b;transition:all .25s}
+  .luz.on.verde{background:var(--verde);box-shadow:0 0 22px var(--verde)}
+  .luz.on.amarillo{background:var(--amarillo);box-shadow:0 0 22px var(--amarillo)}
+  .luz.on.rojo{background:var(--rojo);box-shadow:0 0 22px var(--rojo)}
+  .estado{font:700 20px/1.2 "Courier New",monospace;text-align:center;margin:16px 0 4px}
+  .texto-chico{text-align:center;color:var(--muted);font-size:14px;margin:0}
+
+  /* humedad */
+  .valor{font:700 34px/1 "Courier New",monospace;margin:8px 0}
+  .barra{height:14px;background:#e4eef2;border-radius:8px;overflow:hidden}
+  .barra>div{height:100%;width:0;background:linear-gradient(90deg,#8fd3e2,#2f6fde);transition:width .4s}
+
+  /* MEF */
+  .mef{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:6px;align-items:center;text-align:center}
+  .nodo{border:2px solid var(--line);border-radius:12px;padding:12px 4px;font:700 13px "Courier New",monospace;transition:all .25s;color:var(--muted)}
+  .nodo.activo{border-color:var(--cyan);background:#e3f6fa;color:var(--ink);box-shadow:0 0 0 3px #bfeaf4}
+  .flecha{font:12px "Courier New",monospace;color:var(--muted)}
+  .leyenda{font-size:13px;color:var(--muted);margin:10px 0 0}
+
+  /* switch del buzzer */
+  .fila{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .switch{width:64px;height:34px;border-radius:999px;background:#b8c8d0;position:relative;padding:0;flex:0 0 64px}
+  .switch span{position:absolute;top:4px;left:4px;width:26px;height:26px;border-radius:50%;background:#fff;transition:left .2s}
+  .switch.on{background:var(--verde)}
+  .switch.on span{left:34px}
+
+  /* 3D */
+  #pot3d{height:300px;border-radius:12px;background:linear-gradient(#eaf6fa,#d6ecf4);overflow:hidden;touch-action:none;cursor:grab}
+  .aviso-3d{font-size:13px;color:var(--muted);margin:6px 0 0}
+
+  /* registro */
+  .registro{font:12px/1.5 "Courier New",monospace;background:#0d2230;color:#bdf1ff;border-radius:10px;padding:10px;height:140px;overflow:auto}
+
+  /* informe y materiales */
+  .pagina{display:none}
+  .pagina.activa{display:block}
+  .pagina .card{margin-bottom:14px}
+  .pagina p{margin:0 0 10px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th{background:var(--ink);color:#e6f6fa;text-align:left;padding:9px;font:600 11px/1 "Courier New",monospace;text-transform:uppercase}
+  td{border-bottom:1px solid var(--line);padding:8px;vertical-align:top}
+  [contenteditable]{outline:none;border-radius:4px}
+  [contenteditable]:hover{background:#eef8fb}
+  [contenteditable]:focus{background:#e3f6fa;box-shadow:0 0 0 2px #9ddcea}
+  .codigo{font:12px/1.5 "Courier New",monospace;background:#0d2230;color:#bdf1ff;border-radius:10px;padding:10px;white-space:pre-wrap}
+
+
+  /* MEF ilustrada en el informe */
+  .mefFig{margin:12px 0 4px;text-align:center}
+  .mefsvg{width:100%;height:auto;max-width:700px;font-family:"Courier New",monospace}
+  .mefsvg .nd rect{fill:#fff;stroke:var(--line);stroke-width:3;transition:all .25s}
+  .mefsvg .nd.ok rect{stroke:var(--verde)}
+  .mefsvg .nd.seca rect{stroke:var(--amarillo)}
+  .mefsvg .nd.alarma rect{stroke:var(--rojo)}
+  .mefsvg .nd.activo.ok rect{fill:#e3faf0;stroke-width:6}
+  .mefsvg .nd.activo.seca rect{fill:#fff3df;stroke-width:6}
+  .mefsvg .nd.activo.alarma rect{fill:#fde8e9;stroke-width:6}
+  .mefsvg .t1{font:700 16px "Courier New",monospace;text-anchor:middle;fill:var(--ink)}
+  .mefsvg .t2{font:12px "Courier New",monospace;text-anchor:middle;fill:var(--muted)}
+  .mefsvg .lb{font:11px "Courier New",monospace;text-anchor:middle;fill:var(--ink);paint-order:stroke;stroke:#fff;stroke-width:4px}
+  .mefsvg .lbg{fill:#0b8a5c;font-weight:700}
+  .mefFig figcaption{font-size:12px;color:var(--muted);margin-top:4px}
+  @media (max-width:760px){
+    main{grid-template-columns:1fr}
+    .mef{grid-template-columns:1fr;gap:4px}
+    .flecha{transform:rotate(90deg)}
+  }
+  @media print{
+    header,nav.tabs,.botones{display:none!important}
+    body{background:#fff}
+    main{display:block}
+    .card{page-break-inside:avoid;border:1px solid #ccc}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== Componentes de comunicación (mismo esquema que los trabajos de la cursada) ===== -->
+<!-- Serial: la computadora conectada al Arduino Nano -->
+<arduino-usb protocolo="WebSerial" id="idArduino" eventos="fnArduinoDice"></arduino-usb>
+<!-- MQTT: cada tópico es un elemento hijo que llama a su función.
+     Si usan el broker público, cambien "maceta-estado" y "maceta-comando" por nombres únicos del grupo
+     (por ejemplo "maceta-jony-estado"), en el HTML y en el envío. -->
+<broker-mqtt id="idBroker">
+  <maceta-estado> fnEstadoMaceta </maceta-estado>
+  <maceta-comando> fnComandoMaceta </maceta-comando>
+</broker-mqtt>
+
+<header>
+  <div>
+    <h1>Maceta inteligente</h1>
+    <div class="sub">HUMEDAD · RIEGO · ALERTAS</div>
+  </div>
+  <div class="botones">
+    <button class="primario" onclick="conectarArduino()">Conectar Arduino</button>
+    <button onclick="desconectarArduino()">Desconectar</button>
+    <button id="btnSim" onclick="alternarSimulacion()">Simular sensor</button>
+    <button onclick="pedirPermisoAvisos()">Activar avisos al celular</button>
+    <button class="primario" onclick="guardarHTML()">Guardar en GitHub</button>
+    <button onclick="configurarGitHub()">Configurar GitHub</button>
+    <button onclick="descargarHTML()">Descargar copia</button>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button id="tabControl" class="activa" onclick="mostrarPagina('control')">Control</button>
+  <button id="tabInforme" onclick="mostrarPagina('informe')">Informe (G)</button>
+  <button id="tabMateriales" onclick="mostrarPagina('materiales')">Materiales (H)</button>
+</nav>
+
+<!-- ===== PÁGINA CONTROL ===== -->
+<div id="paginaControl" class="pagina activa">
+<main>
+
+  <!-- Semáforo y estado -->
+  <section class="card">
+    <h2>Estado de la tierra <span class="etiqueta">· requisito B</span></h2>
+    <div class="semaforo">
+      <div id="luzRoja" class="luz rojo"></div>
+      <div id="luzAmarilla" class="luz amarillo"></div>
+      <div id="luzVerde" class="luz verde"></div>
+    </div>
+    <div id="textoEstado" class="estado">Esperando datos…</div>
+    <p class="texto-chico">Los avisos llegan al celular cuando la tierra se seca.</p>
+  </section>
+
+  <!-- Humedad -->
+  <section class="card">
+    <h2>Humedad del suelo</h2>
+    <div class="etiqueta">Lectura del sensor</div>
+    <div id="valorHum" class="valor">-- / 1023</div>
+    <div class="barra"><div id="barraHum"></div></div>
+    <p class="texto-chico" style="margin-top:10px">Tierra: <b id="textoHum">--</b> · umbral seco = 600</p>
+  </section>
+
+  <!-- MEF -->
+  <section class="card ancho">
+    <h2>Máquina de estados (MEF) <span class="etiqueta">· requisito A</span></h2>
+    <div class="mef">
+      <div id="nodoOK" class="nodo">OK<br><small>tierra húmeda</small></div>
+      <div class="flecha">seca →<br>(buzzer off)<br>↓</div>
+      <div id="nodoSECA" class="nodo">SECA<br><small>aviso, sin sonido</small></div>
+      <div class="flecha">buzzer on ↓<br>húmeda ↑</div>
+      <div id="nodoALARMA" class="nodo">ALARMA<br><small>suena el buzzer</small></div>
+    </div>
+    <p class="leyenda">Cambia a SECA cuando la tierra supera el umbral. Pasa a ALARMA si el buzzer está activado. Vuelve a OK cuando la tierra se humedece.</p>
+  </section>
+
+  <!-- Buzzer desde el celular -->
+  <section class="card">
+    <h2>Alarma sonora</h2>
+    <div class="fila">
+      <div>
+        <div id="textoBuzzer" class="etiqueta">Activada</div>
+        <p class="texto-chico" style="text-align:left">Se puede apagar desde el celular si no estás en casa.</p>
+      </div>
+      <button id="switchBuzzer" class="switch on" onclick="alternarBuzzer()" aria-label="Alarma sonora"><span></span></button>
+    </div>
+  </section>
+
+  <!-- Registro -->
+  <section class="card">
+    <h2>Registro de eventos</h2>
+    <div id="registro" class="registro"></div>
+  </section>
+
+  <!-- 3D -->
+  <section class="card ancho">
+    <h2>Maqueta 3D <span class="etiqueta">· requisito F</span></h2>
+    <div id="pot3d"></div>
+    <p class="aviso-3d">Arrastrá la maceta para girarla. La tierra se oscurece con la humedad y la maceta pulsa en rojo durante la alarma.</p>
+  </section>
+
+</main>
+</div>
+
+<!-- ===== PÁGINA INFORME (requisito G) ===== -->
+<div id="paginaInforme" class="pagina">
+<main>
+  <section class="card ancho">
+    <h2>Informe de solución IoT</h2>
+    <p class="etiqueta">1. Problema</p>
+    <p contenteditable="true">Muchas plantas se secan porque el riego depende de la memoria de quien las cuida. La maceta mide la humedad del suelo y avisa al celular cuando hace falta regar.</p>
+    <p class="etiqueta">2. Arquitectura</p>
+    <p contenteditable="true">Sensor de humedad → Arduino Nano (ejecuta la MEF y prende el semáforo y el buzzer) → USB/Serial → computadora con esta página → MQTT → celular (avisos y control del buzzer). La maqueta 3D muestra el estado en tiempo real.</p>
+    <p class="etiqueta">3. Máquina de estados</p>
+    <table>
+      <tr><th>Estado</th><th>Condición</th><th>Salida</th></tr>
+      <tr><td contenteditable="true">OK</td><td contenteditable="true">Humedad ≤ 600</td><td contenteditable="true">LED verde</td></tr>
+      <tr><td contenteditable="true">SECA</td><td contenteditable="true">Humedad &gt; 600 y buzzer apagado</td><td contenteditable="true">LED amarillo y aviso</td></tr>
+      <tr><td contenteditable="true">ALARMA</td><td contenteditable="true">Humedad &gt; 600 y buzzer activado</td><td contenteditable="true">LED rojo, buzzer y aviso</td></tr>
+    </table>
+    <figure class="mefFig">
+      <svg class="mefsvg" viewBox="0 0 700 290" role="img" aria-label="Diagrama de la máquina de estados: OK, SECA y ALARMA">
+        <defs>
+          <marker id="fa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#f2a33a"/></marker>
+          <marker id="fr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e0484f"/></marker>
+          <marker id="fg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14b87a"/></marker>
+          <marker id="fb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f6fde"/></marker>
+        </defs>
+        <g class="nd ok" id="infOK"><rect x="20" y="105" width="170" height="86" rx="12"/>
+          <circle cx="44" cy="128" r="8" fill="#14b87a"/>
+          <text x="105" y="140" class="t1">OK</text><text x="105" y="158" class="t2">tierra húmeda</text><text x="105" y="174" class="t2">LED verde</text></g>
+        <g class="nd seca" id="infSECA"><rect x="265" y="20" width="170" height="86" rx="12"/>
+          <circle cx="289" cy="43" r="8" fill="#f2a33a"/>
+          <text x="350" y="55" class="t1">SECA</text><text x="350" y="73" class="t2">aviso, sin sonido</text><text x="350" y="89" class="t2">LED amarillo</text></g>
+        <g class="nd alarma" id="infALARMA"><rect x="510" y="105" width="170" height="86" rx="12"/>
+          <circle cx="534" cy="128" r="8" fill="#e0484f"/>
+          <text x="595" y="140" class="t1">ALARMA</text><text x="595" y="158" class="t2">suena el buzzer</text><text x="595" y="174" class="t2">LED rojo</text></g>
+
+        <path d="M175 105 L282 70" stroke="#f2a33a" stroke-width="2.5" fill="none" marker-end="url(#fa)"/>
+        <text x="150" y="78" class="lb">humedad &gt; 600</text><text x="150" y="91" class="lb">y buzzer OFF</text>
+
+        <path d="M105 193 Q105 262 350 262 Q595 262 595 193" stroke="#e0484f" stroke-width="2.5" fill="none" marker-end="url(#fr)"/>
+        <text x="350" y="254" class="lb">humedad &gt; 600 y buzzer ON</text>
+
+        <path d="M425 90 L530 118" stroke="#2f6fde" stroke-width="2.5" fill="none" marker-end="url(#fb)" marker-start="url(#fb)"/>
+        <text x="540" y="84" class="lb">BUZZER_ON  →</text><text x="540" y="97" class="lb">←  BUZZER_OFF</text>
+
+        <path d="M268 100 Q235 150 192 150" stroke="#14b87a" stroke-width="2.5" fill="none" marker-end="url(#fg)"/>
+        <path d="M512 165 Q350 195 192 172" stroke="#14b87a" stroke-width="2.5" fill="none" marker-end="url(#fg)"/>
+        <text x="350" y="193" class="lb lbg">humedad ≤ 600</text>
+        <text x="240" y="132" class="lb lbg">humedad ≤ 600</text>
+      </svg>
+      <figcaption>Diagrama de la MEF. El estado actual se ilumina en vivo con los datos que llegan (Arduino, MQTT o simulación).</figcaption>
+    </figure>
+    <p class="etiqueta" style="margin-top:14px">4. Protocolo Serial</p>
+    <div class="codigo">Arduino → PC:  ESTADO:SECA;HUM:720
+PC → Arduino:  BUZZER_ON / BUZZER_OFF</div>
+    <p class="etiqueta" style="margin-top:14px">5. Conclusiones</p>
+    <p contenteditable="true">Completar con lo que aprendimos y las limitaciones del prototipo.</p>
+  </section>
+</main>
+</div>
+
+<!-- ===== PÁGINA MATERIALES (requisito H) ===== -->
+<div id="paginaMateriales" class="pagina">
+<main>
+  <section class="card ancho">
+    <h2>Lista de materiales y costos</h2>
+    <table>
+      <tr><th>Componente</th><th>Función</th><th>Cant.</th><th>Precio unit.</th><th>Subtotal</th></tr>
+      <tr><td>Sensor higrómetro de humedad de suelo</td><td>Mide la humedad</td><td>1</td><td>$ 4.100</td><td>$ 4.100</td></tr>
+      <tr><td>Módulo buzzer activo KY-012</td><td>Alarma sonora</td><td>1</td><td>$ 3.700</td><td>$ 3.700</td></tr>
+      <tr><td>Módulo semáforo LED (rojo, amarillo, verde)</td><td>Indicador de estado</td><td>1</td><td>$ 3.100</td><td>$ 3.100</td></tr>
+      <tr><td contenteditable="true">Arduino Nano</td><td contenteditable="true">Controla la MEF</td><td contenteditable="true">1</td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+      <tr><td contenteditable="true">Cables jumper, protoboard</td><td contenteditable="true">Conexiones</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+      <tr><td contenteditable="true">Fuente o cable USB</td><td contenteditable="true">Alimentación</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+      <tr><td contenteditable="true">Maceta y tierra</td><td contenteditable="true">Estructura</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+      <tr><td><b>Total comprado</b></td><td></td><td></td><td></td><td><b>$ 15.000</b></td></tr>
+    </table>
+    <p class="etiqueta" style="margin-top:10px">Precios del carrito de SYSPORT, con envío gratis.</p>
+  </section>
+</main>
+</div>
+
+<script>
+  // ---------- Constantes ----------
+  const UMBRAL = 600;                       // igual que umbralSeco en el Arduino
+  const TEXTOS = {
+    OK: "OK · Tierra húmeda",
+    SECA: "SECA · Hay que regar",
+    ALARMA: "ALARMA · ¡Tierra seca!"
+  };
+
+  // ---------- Estado de la página ----------
+  let estadoActual = "OK";
+  let ultimoEstado = null;                  // para avisar solo cuando cambia
+  let humedadActual = 0;
+  let buzzerOn = true;
+  let ultimoDatoUSB = 0;                    // para saber si el Arduino está conectado a esta computadora
+  let simTimer = null;
+  let simHum = 300;
+
+  function $(id){ return document.getElementById(id); }
+
+  function registrar(texto){
+    const r = $("registro");
+    const d = document.createElement("div");
+    d.textContent = new Date().toLocaleTimeString() + "  " + texto;
+    r.prepend(d);
+  }
+
+  // ---------- Conexión con el Arduino (Serial) ----------
+  function conectarArduino(){
+    try { idArduino.conectar(); registrar("Conectando con el Arduino…"); }
+    catch(e){ registrar("No se pudo conectar: " + e.message); }
+  }
+  function desconectarArduino(){
+    try { idArduino.desconectar(); registrar("Arduino desconectado"); }
+    catch(e){ registrar("Error al desconectar: " + e.message); }
+  }
+  function hayArduino(){
+    return Date.now() - ultimoDatoUSB < 5000;   // llegaron datos en los últimos 5 segundos
+  }
+
+  // Llega una línea desde el Arduino por USB
+  function fnArduinoDice(linea){
+    ultimoDatoUSB = Date.now();
+    procesarLinea(linea);
+    // Se publica por MQTT para que el celular vea el estado
+    try { idBroker.enviar(linea, "maceta-estado"); } catch(e){ /* sin MQTT no se corta el USB */ }
+  }
+
+  // ---------- Recepción por MQTT (estado) ----------
+  // Llega desde el broker; la usan el celular y la computadora
+  function fnEstadoMaceta(linea){
+    procesarLinea(linea);
+  }
+
+  // ---------- Comandos (buzzer) ----------
+  function enviarComando(cmd){
+    // Se publica por MQTT. La computadora conectada al Arduino lo reenvía por USB.
+    try { idBroker.enviar(cmd, "maceta-comando"); registrar("Comando enviado: " + cmd); }
+    catch(e){ registrar("No se pudo enviar el comando: " + e.message); }
+  }
+  function fnComandoMaceta(cmd){
+    registrar("Comando recibido: " + cmd);
+    if(cmd === "BUZZER_ON" || cmd === "BUZZER_OFF"){
+      setBuzzerUI(cmd === "BUZZER_ON");
+      if(hayArduino()){
+        try { idArduino.enviar(cmd); } catch(e){ registrar("Error al enviar al Arduino: " + e.message); }
+      }
+    }
+  }
+  function alternarBuzzer(){
+    const nuevo = !buzzerOn;
+    setBuzzerUI(nuevo);                      // se muestra al instante
+    enviarComando(nuevo ? "BUZZER_ON" : "BUZZER_OFF");
+  }
+  function setBuzzerUI(on){
+    buzzerOn = on;
+    $("switchBuzzer").classList.toggle("on", on);
+    $("textoBuzzer").textContent = on ? "Activada" : "Silenciada desde el celular";
+  }
+
+  // ---------- Procesar una línea "ESTADO:SECA;HUM:720" ----------
+  function procesarLinea(linea){
+    let estado = estadoActual;
+    let hum = humedadActual;
+    String(linea).trim().split(";").forEach(function(parte){
+      const par = parte.split(":");
+      if(par[0] === "ESTADO") estado = par[1];
+      if(par[0] === "HUM") hum = Number(par[1]);
+    });
+    if(!TEXTOS[estado]) return;              // ignora líneas que no son del estado
+    mostrarEstado(estado, hum);
+  }
+
+  function mostrarEstado(estado, hum){
+    const cambio = estado !== ultimoEstado;
+    estadoActual = estado;
+    humedadActual = hum;
+
+    // Semáforo
+    ["luzVerde","luzAmarilla","luzRoja"].forEach(id => $(id).classList.remove("on"));
+    const luz = {OK:"luzVerde", SECA:"luzAmarilla", ALARMA:"luzRoja"}[estado];
+    $(luz).classList.add("on");
+    $("textoEstado").textContent = TEXTOS[estado];
+
+    // Humedad
+    const pct = Math.round(Math.min(Math.max(hum,0),1023) / 1023 * 100);
+    $("barraHum").style.width = pct + "%";
+    $("valorHum").textContent = hum + " / 1023";
+    $("textoHum").textContent = hum <= UMBRAL ? "húmeda" : "seca";
+
+    // MEF
+    ["nodoOK","nodoSECA","nodoALARMA"].forEach(id => $(id).classList.remove("activo"));
+    const nodo = {OK:"nodoOK", SECA:"nodoSECA", ALARMA:"nodoALARMA"}[estado];
+    $(nodo).classList.add("activo");
+
+    // MEF ilustrada del informe: ilumina el estado actual
+    [["infOK","OK"],["infSECA","SECA"],["infALARMA","ALARMA"]].forEach(function(p){
+      $(p[0]).classList.toggle("activo", p[1] === estado);
+    });
+
+    // Avisos cuando cambia el estado
+    if(cambio){
+      ultimoEstado = estado;
+      if(estado === "SECA") avisar("La maceta está seca. Hay que regarla.");
+      if(estado === "ALARMA") avisar("¡Maceta seca y alarma sonando!");
+      if(estado === "OK") registrar("La tierra volvió a estar húmeda");
+    }
+
+    actualizar3D(estado, hum);
+  }
+
+  // ---------- Avisos al celular ----------
+  function avisar(texto){
+    registrar("AVISO: " + texto);
+    if(navigator.vibrate) navigator.vibrate([300,150,300]);
+    try {
+      if("Notification" in window && Notification.permission === "granted"){
+        new Notification("Maceta inteligente", { body: texto });
+      }
+    } catch(e){ /* algunos celulares no permiten notificaciones desde la página */ }
+  }
+  function pedirPermisoAvisos(){
+    if(!("Notification" in window)){ registrar("Este navegador no tiene notificaciones"); return; }
+    Notification.requestPermission().then(p => registrar("Avisos: " + p));
+  }
+
+  // ---------- Simulación (para probar sin Arduino) ----------
+  function alternarSimulacion(){
+    if(simTimer){
+      clearInterval(simTimer);
+      simTimer = null;
+      $("btnSim").textContent = "Simular sensor";
+      registrar("Simulación detenida");
+      return;
+    }
+    $("btnSim").textContent = "Detener simulación";
+    registrar("Simulación iniciada");
+    simTimer = setInterval(function(){
+      // La tierra se va secando de a poco
+      simHum = Math.max(0, Math.min(1023, simHum + Math.random() * 160 - 60));
+      const hum = Math.round(simHum);
+      // Misma lógica que el Arduino
+      const estado = hum <= UMBRAL ? "OK" : (buzzerOn ? "ALARMA" : "SECA");
+      procesarLinea("ESTADO:" + estado + ";HUM:" + hum);
+    }, 1000);
+    // Botón para regar en la simulación
+  }
+
+  // ---------- Navegación entre páginas ----------
+  function mostrarPagina(nombre){
+    ["Control","Informe","Materiales"].forEach(n => {
+      $("pagina" + n).classList.toggle("activa", n.toLowerCase() === nombre || (nombre === "materiales" && n === "Materiales"));
+    });
+    $("tabControl").classList.toggle("activa", nombre === "control");
+    $("tabInforme").classList.toggle("activa", nombre === "informe");
+    $("tabMateriales").classList.toggle("activa", nombre === "materiales");
+  }
+
+  // ---------- Maqueta 3D (Three.js) ----------
+  let actualizar3D = function(){};
+  if(window.THREE){
+    const cont = $("pot3d");
+    const escena = new THREE.Scene();
+    const camara = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
+    camara.position.set(0, 2.4, 7);
+    camara.lookAt(0, 1.2, 0);
+    const motor = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    motor.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    cont.appendChild(motor.domElement);
+
+    escena.add(new THREE.AmbientLight(0xffffff, 0.75));
+    const sol = new THREE.DirectionalLight(0xffffff, 0.8);
+    sol.position.set(3, 6, 4);
+    escena.add(sol);
+
+    const grupo = new THREE.Group();
+    escena.add(grupo);
+
+    const matMaceta = new THREE.MeshStandardMaterial({ color: 0xb5653a, roughness: 0.7 });
+    const maceta = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 0.85, 1.6, 40), matMaceta);
+    maceta.position.y = 0.8;
+    grupo.add(maceta);
+
+    const matTierra = new THREE.MeshStandardMaterial({ color: 0x9a7650, roughness: 1 });
+    const tierra = new THREE.Mesh(new THREE.CylinderGeometry(1.12, 1.12, 0.12, 40), matTierra);
+    tierra.position.y = 1.6;
+    grupo.add(tierra);
+
+    const tallo = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 1.4, 12),
+      new THREE.MeshStandardMaterial({ color: 0x2a7a4b }));
+    tallo.position.y = 2.3;
+    grupo.add(tallo);
+
+    const matHoja = new THREE.MeshStandardMaterial({ color: 0x2fa35b, roughness: 0.6 });
+    for(let i = 0; i < 7; i++){
+      const hoja = new THREE.Mesh(new THREE.SphereGeometry(0.42, 20, 16), matHoja);
+      const ang = (i / 7) * Math.PI * 2;
+      hoja.position.set(Math.cos(ang) * 0.4, 2.2 + (i % 3) * 0.3, Math.sin(ang) * 0.4);
+      hoja.scale.set(1, 0.45, 1);
+      grupo.add(hoja);
+    }
+
+    function ajustar(){
+      const w = cont.clientWidth, h = cont.clientHeight;
+      motor.setSize(w, h);
+      camara.aspect = w / h;
+      camara.updateProjectionMatrix();
+    }
+    window.addEventListener("resize", ajustar);
+    ajustar();
+
+    // Girar arrastrando
+    let arrastrando = false, ultimoX = 0;
+    cont.addEventListener("pointerdown", e => { arrastrando = true; ultimoX = e.clientX; });
+    window.addEventListener("pointerup", () => { arrastrando = false; });
+    window.addEventListener("pointermove", e => {
+      if(arrastrando){ grupo.rotation.y += (e.clientX - ultimoX) * 0.01; ultimoX = e.clientX; }
+    });
+
+    actualizar3D = function(estado, hum){
+      const k = Math.min(Math.max(hum, 0), 1023) / 1023;
+      matTierra.color.copy(new THREE.Color(0x2d1b0e).lerp(new THREE.Color(0x9a7650), k));
+    };
+
+    function animar(t){
+      requestAnimationFrame(animar);
+      if(!arrastrando) grupo.rotation.y += 0.004;
+      if(estadoActual === "ALARMA"){
+        matMaceta.emissive.setHex(0xe0484f);
+        matMaceta.emissiveIntensity = 0.3 + 0.3 * Math.sin(t / 200);
+      } else {
+        matMaceta.emissive.setHex(0x000000);
+      }
+      motor.render(escena, camara);
+    }
+    requestAnimationFrame(animar);
+  }
+
+  // ---------- Guardar el HTML editado: se sube directo al repo de GitHub ----------
+  // Se necesita un token de GitHub (fine-grained, solo este repo, permiso "Contents: Read and write").
+  // El token se guarda únicamente en este navegador (localStorage); nunca va dentro del HTML.
+  const GH_DEFECTO = { repo: "battson/maceta_humedad", rama: "main", archivo: "maceta_control.html" };
+
+  function ghConfig(){
+    try { return Object.assign({}, GH_DEFECTO, JSON.parse(localStorage.getItem("maceta_gh") || "{}")); }
+    catch(e){ return Object.assign({}, GH_DEFECTO); }
+  }
+  function configurarGitHub(){
+    const c = ghConfig();
+    const repo = prompt("Repositorio (usuario/nombre):", c.repo); if(repo === null) return;
+    const rama = prompt("Rama donde guardar:", c.rama); if(rama === null) return;
+    const archivo = prompt("Ruta del archivo en el repo:", c.archivo); if(archivo === null) return;
+    const token = prompt("Token de GitHub (fine-grained, permiso Contents: Read and write). Dejá vacío para conservar el actual:", ""); if(token === null) return;
+    const nuevo = { repo: repo.trim(), rama: rama.trim(), archivo: archivo.trim(), token: token.trim() || c.token || "" };
+    try { localStorage.setItem("maceta_gh", JSON.stringify(nuevo)); registrar("GitHub configurado: " + nuevo.repo + " @ " + nuevo.rama); }
+    catch(e){ registrar("No se pudo guardar la configuración: " + e.message); }
+  }
+
+  // Copia limpia del documento actual (los textos editables siguen siendo editables)
+  function htmlLimpio(){
+    const copia = document.documentElement.cloneNode(true);
+    copia.querySelectorAll("#pot3d canvas").forEach(c => c.remove());
+    const reg = copia.querySelector("#registro");
+    if(reg) reg.innerHTML = "";
+    const bs = copia.querySelector("#btnSim");
+    if(bs) bs.textContent = "Simular sensor";
+    return "<!DOCTYPE html>\n" + copia.outerHTML;
+  }
+  function aBase64(texto){
+    const bytes = new TextEncoder().encode(texto);
+    let bin = "";
+    for(let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(bin);
+  }
+
+  async function guardarHTML(){
+    const c = ghConfig();
+    if(!c.token){
+      registrar("Falta el token de GitHub. Tocá «Configurar GitHub».");
+      configurarGitHub();
+      if(!ghConfig().token) return;
+    }
+    const cfg = ghConfig();
+    const url = "https://api.github.com/repos/" + cfg.repo + "/contents/" + cfg.archivo.split("/").map(encodeURIComponent).join("/");
+    const cab = { "Authorization": "Bearer " + cfg.token, "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" };
+    registrar("Subiendo a GitHub…");
+    try {
+      // 1) sha actual del archivo (hace falta para actualizarlo)
+      let sha;
+      const g = await fetch(url + "?ref=" + encodeURIComponent(cfg.rama), { headers: cab });
+      if(g.ok) sha = (await g.json()).sha;
+      else if(g.status !== 404) throw new Error("GitHub respondió " + g.status + " al leer el archivo");
+      // 2) commit con el contenido nuevo
+      const cuerpo = { message: "Edición desde la página (" + new Date().toLocaleString() + ")", content: aBase64(htmlLimpio()), branch: cfg.rama };
+      if(sha) cuerpo.sha = sha;
+      const r = await fetch(url, { method: "PUT", headers: Object.assign({ "Content-Type": "application/json" }, cab), body: JSON.stringify(cuerpo) });
+      if(!r.ok){
+        let det = ""; try { det = (await r.json()).message; } catch(e){}
+        throw new Error("GitHub respondió " + r.status + (det ? ": " + det : ""));
+      }
+      registrar("Guardado en GitHub: " + cfg.repo + "/" + cfg.archivo + " (" + cfg.rama + ")");
+    } catch(e){
+      registrar("No se pudo subir a GitHub: " + e.message + ". Podés usar «Descargar copia».");
+    }
+  }
+
+  // Respaldo: descargar el HTML al disco
+  function descargarHTML(){
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([htmlLimpio()], { type: "text/html" }));
+    a.download = "maceta_control_editado.html";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    registrar("Copia descargada: maceta_control_editado.html");
+  }
+
+  registrar("Página lista. Conectá el Arduino o usá la simulación.");
+</script>
+</body>
+</html>
